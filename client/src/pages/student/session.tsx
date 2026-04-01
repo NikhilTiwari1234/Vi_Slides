@@ -1,0 +1,207 @@
+import { useState } from "react";
+import { useParams, useLocation } from "wouter";
+import { useAuthGuard } from "@/lib/auth";
+import { useSocket } from "@/hooks/use-socket";
+import {
+  useGetSession,
+  useGetQuestions,
+  useSubmitQuestion,
+  useSendEngagement,
+  getGetQuestionsQueryKey,
+} from "@/lib/hooks";
+import type { EngagementRequestType } from "@/lib/hooks";
+import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { Hand, MessageSquare, Loader2, ThumbsUp, HelpCircle, CheckCircle, Clock } from "lucide-react";
+
+export default function StudentSession() {
+  const { sessionId: sessionIdStr } = useParams<{ sessionId: string }>();
+  const sessionId = parseInt(sessionIdStr, 10);
+  const { isReady } = useAuthGuard("student");
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  useSocket(sessionId);
+
+  const { data: session, isLoading: sessionLoading } = useGetSession(sessionId, {
+    query: { enabled: isReady && !!sessionId, refetchOnWindowFocus: false },
+  });
+
+  const { data: questions } = useGetQuestions(sessionId, {
+    query: { enabled: isReady && !!sessionId, refetchOnWindowFocus: false },
+  });
+
+  const submitQuestionMutation = useSubmitQuestion();
+  const sendEngagementMutation = useSendEngagement();
+
+  const [questionText, setQuestionText] = useState("");
+  const [isHandRaised, setIsHandRaised] = useState(false);
+  const [activePulse, setActivePulse] = useState<EngagementRequestType | null>(null);
+
+  if (!isReady || sessionLoading) {
+    return <div className="min-h-[100dvh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
+
+  if (!session) {
+    return <div className="p-8 text-center text-white">Session not found</div>;
+  }
+
+  if (session.status === "ended") {
+    return (
+      <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
+          <CheckCircle size={40} className="text-muted-foreground" />
+        </div>
+        <h1 className="text-3xl font-bold text-white mb-2">Session Ended</h1>
+        <p className="text-muted-foreground mb-8">The teacher has closed this session.</p>
+        <Button onClick={() => setLocation("/student/join")} variant="outline" className="border-white/20 hover:bg-white/10">
+          Join Another Session
+        </Button>
+      </div>
+    );
+  }
+
+  const isPaused = session.status === "paused";
+
+  const handleAskQuestion = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!questionText.trim() || isPaused) return;
+
+    submitQuestionMutation.mutate({ sessionId, data: { text: questionText } }, {
+      onSuccess: () => {
+        setQuestionText("");
+        toast({ title: "Question submitted!" });
+        queryClient.invalidateQueries({ queryKey: getGetQuestionsQueryKey(sessionId) });
+      },
+      onError: (err) => {
+        toast({ variant: "destructive", title: "Error", description: err.message });
+      },
+    });
+  };
+
+  const toggleHand = () => {
+    const newStatus = !isHandRaised;
+    const type: EngagementRequestType = newStatus ? "hand_raise" : "hand_lower";
+    sendEngagementMutation.mutate({ sessionId, data: { type } }, {
+      onSuccess: () => setIsHandRaised(newStatus),
+    });
+  };
+
+  const sendPulse = (type: EngagementRequestType) => {
+    setActivePulse(type);
+    sendEngagementMutation.mutate({ sessionId, data: { type } });
+    setTimeout(() => setActivePulse(null), 2000);
+  };
+
+  const displayQuestions = questions || [];
+
+  return (
+    <div className="min-h-[100dvh] bg-background text-foreground flex flex-col overflow-hidden relative">
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none -z-10" />
+
+      <header className="glass-panel sticky top-0 z-50 px-6 py-4 flex items-center justify-between border-b border-white/10">
+        <div>
+          <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-1">
+            {isPaused ? <span className="text-amber-500">PAUSED</span> : <span className="text-green-500">LIVE</span>}
+          </div>
+          <h1 className="text-xl font-semibold text-white truncate max-w-[200px] sm:max-w-xs">{session.title}</h1>
+        </div>
+
+        <Button
+          onClick={toggleHand}
+          className={`h-12 px-6 rounded-full transition-all duration-300 shadow-lg ${isHandRaised ? "bg-primary text-black shadow-primary/50 scale-105 ring-4 ring-primary/20" : "bg-white/10 text-white hover:bg-white/20 border border-white/10"}`}
+        >
+          <Hand size={20} className={`mr-2 ${isHandRaised ? "animate-bounce" : ""}`} />
+          {isHandRaised ? "Hand Raised" : "Raise Hand"}
+        </Button>
+      </header>
+
+      <main className="flex-1 w-full max-w-3xl mx-auto p-4 md:p-6 flex flex-col gap-6">
+        <div className="glass p-5 rounded-3xl flex justify-between items-center gap-2">
+          <Button variant="ghost" className={`flex-1 flex flex-col h-auto py-3 gap-2 rounded-2xl ${activePulse === "confused" ? "bg-amber-500/20 text-amber-400" : "hover:bg-white/5 text-muted-foreground"}`} onClick={() => sendPulse("confused")}>
+            <HelpCircle size={28} />
+            <span className="text-xs font-semibold">Confused</span>
+          </Button>
+
+          <div className="w-px h-12 bg-white/10" />
+
+          <Button variant="ghost" className={`flex-1 flex flex-col h-auto py-3 gap-2 rounded-2xl ${activePulse === "ok" ? "bg-blue-500/20 text-blue-400" : "hover:bg-white/5 text-muted-foreground"}`} onClick={() => sendPulse("ok")}>
+            <ThumbsUp size={28} />
+            <span className="text-xs font-semibold">Following</span>
+          </Button>
+
+          <div className="w-px h-12 bg-white/10" />
+
+          <Button variant="ghost" className={`flex-1 flex flex-col h-auto py-3 gap-2 rounded-2xl ${activePulse === "got_it" ? "bg-green-500/20 text-green-400" : "hover:bg-white/5 text-muted-foreground"}`} onClick={() => sendPulse("got_it")}>
+            <CheckCircle size={28} />
+            <span className="text-xs font-semibold">Got It</span>
+          </Button>
+        </div>
+
+        <div className="glass p-6 rounded-3xl relative overflow-hidden">
+          {isPaused && (
+            <div className="absolute inset-0 z-10 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center text-center">
+              <Clock size={32} className="text-amber-500 mb-2" />
+              <p className="font-medium text-white">Input Paused</p>
+              <p className="text-sm text-muted-foreground">Teacher has temporarily paused questions.</p>
+            </div>
+          )}
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <MessageSquare size={18} className="text-primary" /> Ask a Question
+          </h2>
+          <form onSubmit={handleAskQuestion}>
+            <Textarea
+              value={questionText}
+              onChange={(e) => setQuestionText(e.target.value)}
+              placeholder="What's confusing you? Be specific..."
+              className="resize-none bg-black/40 border-white/10 mb-4 h-24 text-base focus-visible:ring-primary/50"
+              disabled={isPaused || submitQuestionMutation.isPending}
+            />
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8"
+                disabled={!questionText.trim() || isPaused || submitQuestionMutation.isPending}
+              >
+                {submitQuestionMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Ask Anonymously
+              </Button>
+            </div>
+          </form>
+        </div>
+
+        <div className="flex-1 mt-4">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 px-2">Questions Stream</h2>
+          <div className="space-y-3 pb-20">
+            {displayQuestions.length > 0 ? (
+              displayQuestions.map((q) => (
+                <div key={q.id} className="bg-black/20 border border-white/5 p-4 rounded-2xl text-left">
+                  <div className="flex items-start justify-between gap-4 mb-2">
+                    <p className="text-white/90 font-medium text-sm leading-relaxed">{q.text}</p>
+                    {q.status === "answered" ? (
+                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30 whitespace-nowrap">Answered</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-muted-foreground border-white/10 whitespace-nowrap">Pending</Badge>
+                    )}
+                  </div>
+                  {q.answer && (
+                    <div className="mt-3 bg-primary/10 border border-primary/20 rounded-xl p-3">
+                      <div className="text-[10px] text-primary font-bold uppercase tracking-wider mb-1">Answer ({q.answeredBy})</div>
+                      <p className="text-sm text-primary-foreground/90">{q.answer}</p>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-muted-foreground py-10">No questions asked yet.</div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

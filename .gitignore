@@ -1,0 +1,18 @@
+# Environment variables — never commit these
+.env
+
+# Node modules
+node_modules/
+server/node_modules/
+client/node_modules/
+
+# Build outputs
+server/dist/
+client/dist/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
