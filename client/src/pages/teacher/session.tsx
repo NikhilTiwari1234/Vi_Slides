@@ -66,7 +66,22 @@ export default function TeacherSession() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [teacherAnswer, setTeacherAnswer] = useState("");
 
-  const pendingQuestions = questions?.filter((q) => q.status === "pending") || [];
+  
+  
+  const pendingQuestions = (questions || [])
+  .filter((q) => q.status === "pending")
+  .sort((a, b) => {
+   
+    if ((b.duplicateCount || 0) !== (a.duplicateCount || 0)) {
+      return (b.duplicateCount || 0) - (a.duplicateCount || 0);
+    }
+
+    if (a.type !== b.type) {
+      return a.type === "complex" ? -1 : 1;
+    }
+
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
   const currentQuestion = pendingQuestions[currentQuestionIndex];
 
   useEffect(() => {
@@ -215,7 +230,16 @@ export default function TeacherSession() {
                     </div>
                     {currentQuestion.studentName} asked:
                     {currentQuestion.duplicateCount > 0 && (
-                      <Badge variant="outline" className="ml-2 border-white/20 text-xs">+{currentQuestion.duplicateCount} others</Badge>
+                      <>
+                         <Badge className="ml-2 border-white/20 text-xs">
+                           +{currentQuestion.duplicateCount} others
+                         </Badge>
+                         {currentQuestion.duplicateCount > 2 && (
+                          <Badge className="ml-2 bg-red-500/20 text-red-400 border-red-500/30 text-xs">
+                            🔥 Popular
+                          </Badge>
+                          )}
+                      </>
                     )}
                   </div>
 
