@@ -199,6 +199,64 @@ export async function answerQuestion(
   );
 }
 
+export interface Poll {
+  id: number;
+  sessionId: number;
+  question: string;
+  options: string[];
+  status: "draft" | "active" | "closed";
+  createdAt: string;
+}
+
+export interface PollResults {
+  pollId: number;
+  sessionId: number;
+  question: string;
+  options: string[];
+  status: "draft" | "active" | "closed";
+  counts: number[];
+  total: number;
+  userVote: number | null;
+}
+
+export async function getPolls(sessionId: number): Promise<Poll[]> {
+  return request("GET", `/api/sessions/${sessionId}/polls`);
+}
+
+export async function getActivePoll(sessionId: number): Promise<PollResults | null> {
+  return request("GET", `/api/sessions/${sessionId}/polls/active`);
+}
+
+export async function createPoll(
+  sessionId: number,
+  question: string,
+  options: string[]
+): Promise<Poll> {
+  return request("POST", `/api/sessions/${sessionId}/polls`, { question, options });
+}
+
+export async function activatePoll(sessionId: number, pollId: number): Promise<Poll> {
+  return request("POST", `/api/sessions/${sessionId}/polls/${pollId}/activate`);
+}
+
+export async function closePoll(sessionId: number, pollId: number): Promise<Poll> {
+  return request("POST", `/api/sessions/${sessionId}/polls/${pollId}/close`);
+}
+
+export async function respondToPoll(
+  sessionId: number,
+  pollId: number,
+  selectedOption: number
+): Promise<PollResults> {
+  return request("POST", `/api/sessions/${sessionId}/polls/${pollId}/respond`, { selectedOption });
+}
+
+export async function getPollResults(
+  sessionId: number,
+  pollId: number
+): Promise<PollResults> {
+  return request("GET", `/api/sessions/${sessionId}/polls/${pollId}/results`);
+}
 
 
 export async function sendEngagement(

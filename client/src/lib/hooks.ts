@@ -4,13 +4,13 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import type { UseQueryOptions, UseMutationOptions } from "@tanstack/react-query";
 import * as api from "./api";
 import type {
-  User, Session, Participant, Question, EngagementSummary,
+  User, Session, Participant, Question, EngagementSummary, Poll, PollResults,
   AuthResponse, AnswerQuestionRequestAnsweredBy, EngagementRequestType,
   RegisterRequestRole,
 } from "./api";
 
 export type {
-  User, Session, Participant, Question, EngagementSummary, AuthResponse,
+  User, Session, Participant, Question, EngagementSummary, Poll, PollResults, AuthResponse,
   AnswerQuestionRequestAnsweredBy, EngagementRequestType, RegisterRequestRole,
 };
 
@@ -23,6 +23,9 @@ export const getGetParticipantsQueryKey = (sessionId: number) => [`/api/sessions
 export const getGetQuestionsQueryKey = (sessionId: number) => [`/api/sessions/${sessionId}/questions`] as const;
 export const getGetEngagementSummaryQueryKey = (sessionId: number) => [`/api/sessions/${sessionId}/engagement/summary`] as const;
 
+export const getGetPollsQueryKey = (sessionId: number) => [`/api/sessions/${sessionId}/polls`] as const;
+export const getGetActivePollQueryKey = (sessionId: number) => [`/api/sessions/${sessionId}/polls/active`] as const;
+export const getGetPollResultsQueryKey = (sessionId: number, pollId: number) => [`/api/sessions/${sessionId}/polls/${pollId}/results`] as const;
 
 export function useGetMe(options?: {
   query?: UseQueryOptions<User>;
@@ -196,6 +199,7 @@ export function useGetEngagementSummary(
 }
 
 
+/** Send an engagement signal (raise hand, confused, ok, got it) */
 export function useSendEngagement(
   options?: UseMutationOptions<
     EngagementSummary,
@@ -212,3 +216,73 @@ export function useSendEngagement(
     ...options,
   });
 }
+export function useGetPolls(
+  sessionId: number,
+  options?: { query?: UseQueryOptions<Poll[]> }
+) {
+  return useQuery<Poll[]>({
+    queryKey: getGetPollsQueryKey(sessionId),
+    queryFn: () => api.getPolls(sessionId),
+    ...options?.query,
+  });
+}
+
+export function useGetActivePoll(
+  sessionId: number,
+  options?: { query?: UseQueryOptions<PollResults | null> }
+) {
+  return useQuery<PollResults | null>({
+    queryKey: getGetActivePollQueryKey(sessionId),
+    queryFn: () => api.getActivePoll(sessionId),
+    ...options?.query,
+  });
+}
+
+export function useGetPollResults(
+  sessionId: number,
+  pollId: number,
+  options?: { query?: UseQueryOptions<PollResults> }
+) {
+  return useQuery<PollResults>({
+    queryKey: getGetPollResultsQueryKey(sessionId, pollId),
+    queryFn: () => api.getPollResults(sessionId, pollId),
+    ...options?.query,
+  });
+}
+
+export function useCreatePoll(
+  options?: UseMutationOptions<Poll, Error, { sessionId: number; data: { question: string; options: string[] } }>
+) {
+  return useMutation<Poll, Error, { sessionId: number; data: { question: string; options: string[] } }>({
+    mutationFn: ({ sessionId, data }) => api.createPoll(sessionId, data.question, data.options),
+    ...options,
+  });
+}
+
+export function useActivatePoll(
+  options?: UseMutationOptions<Poll, Error, { sessionId: number; pollId: number }>
+) {
+  return useMutation<Poll, Error, { sessionId: number; pollId: number }>({
+    mutationFn: ({ sessionId, pollId }) => api.activatePoll(sessionId, pollId),
+    ...options,
+  });
+}
+
+export function useClosePoll(
+  options?: UseMutationOptions<Poll, Error, { sessionId: number; pollId: number }>
+) {
+  return useMutation<Poll, Error, { sessionId: number; pollId: number }>({
+    mutationFn: ({ sessionId, pollId }) => api.closePoll(sessionId, pollId),
+    ...options,
+  });
+}
+
+export function useRespondToPoll(
+  options?: UseMutationOptions<PollResults, Error, { sessionId: number; pollId: number; selectedOption: number }>
+) {
+  return useMutation<PollResults, Error, { sessionId: number; pollId: number; selectedOption: number }>({
+    mutationFn: ({ sessionId, pollId, selectedOption }) =>
+      api.respondToPoll(sessionId, pollId, selectedOption),
+    ...options,
+  });
+} 
