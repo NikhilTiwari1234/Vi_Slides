@@ -5,9 +5,12 @@ import { useSocket } from "@/hooks/use-socket";
 import {
   useGetSession,
   useGetQuestions,
+  useGetActivePoll,
   useSubmitQuestion,
   useSendEngagement,
+  useRespondToPoll,
   getGetQuestionsQueryKey,
+  getGetActivePollQueryKey,
 } from "@/lib/hooks";
 import type { EngagementRequestType } from "@/lib/hooks";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import QuestionCard from "@/components/ui/QuestionCard";
 const currentUserId =
   JSON.parse(localStorage.getItem("user") || "{}")?.id;
-import { Hand, MessageSquare, Loader2, ThumbsUp, HelpCircle, CheckCircle, Clock } from "lucide-react";
+import { Hand, MessageSquare, Loader2, ThumbsUp, HelpCircle, CheckCircle, Clock, BarChart2 } from "lucide-react";
 
 export default function StudentSession() {
   const { sessionId: sessionIdStr } = useParams<{ sessionId: string }>();
@@ -38,8 +41,13 @@ export default function StudentSession() {
     query: { enabled: isReady && !!sessionId, refetchOnWindowFocus: false },
   });
 
+  const { data: activePoll } = useGetActivePoll(sessionId, {
+    query: { enabled: isReady && !!sessionId, refetchOnWindowFocus: false, refetchInterval: 5000 },
+  });
+
   const submitQuestionMutation = useSubmitQuestion();
   const sendEngagementMutation = useSendEngagement();
+  const respondToPollMutation = useRespondToPoll();
 
   const [questionText, setQuestionText] = useState("");
   const [isHandRaised, setIsHandRaised] = useState(false);
@@ -100,7 +108,20 @@ export default function StudentSession() {
     setTimeout(() => setActivePulse(null), 2000);
   };
 
+  const handleVote = (optionIndex: number) => {
+    if (!activePoll || activePoll.userVote !== null) return;
+    respondToPollMutation.mutate({ sessionId, pollId: activePoll.pollId, selectedOption: optionIndex }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetActivePollQueryKey(sessionId) });
+        toast({ title: "Vote submitted!" });
+      },
+      onError: (err) => toast({ variant: "destructive", title: "Could not submit vote", description: err.message }),
+    });
+  };
+
   const displayQuestions = questions || [];
+  const hasVoted = activePoll?.userVote !== null && activePoll?.userVote !== undefined;
+  const maxCount = activePoll ? Math.max(...activePoll.counts, 1) : 1;
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col overflow-hidden relative">
@@ -124,6 +145,7 @@ export default function StudentSession() {
       </header>
 
       <main className="flex-1 w-full max-w-3xl mx-auto p-4 md:p-6 flex flex-col gap-6">
+        {/* ── Pulse bar ───────────────────────────────────────────────────── */}
         <div className="glass p-5 rounded-3xl flex justify-between items-center gap-2">
           <Button variant="ghost" className={`flex-1 flex flex-col h-auto py-3 gap-2 rounded-2xl ${activePulse === "confused" ? "bg-amber-500/20 text-amber-400" : "hover:bg-white/5 text-muted-foreground"}`} onClick={() => sendPulse("confused")}>
             <HelpCircle size={28} />
@@ -145,6 +167,68 @@ export default function StudentSession() {
           </Button>
         </div>
 
+        {/* ── Active Poll card ─────────────────────────────────────────────── */}
+        {activePoll && (
+          <div className="glass p-6 rounded-3xl border border-primary/20 relative overflow-hidden animate-in slide-in-from-top-4 duration-300">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart2 size={18} className="text-primary" />
+              <h2 className="text-base font-semibold text-white">Live Poll</h2>
+              <span className="ml-auto flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <span className="text-xs text-primary font-medium">Active</span>
+              </span>
+            </div>
+
+            <p className="text-white font-medium mb-5 text-lg leading-snug">{activePoll.question}</p>
+
+            {!hasVoted ? (
+              /* Voting state: show clickable buttons */
+              <div className="space-y-2">
+                {activePoll.options.map((opt, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleVote(i)}
+                    disabled={respondToPollMutation.isPending}
+                    className="w-full text-left px-4 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-primary/20 hover:border-primary/40 text-white text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {opt}
+                  </button>
+                ))}
+                <p className="text-xs text-muted-foreground text-center pt-1">Tap an option to vote — you can only vote once.</p>
+              </div>
+            ) : (
+              /* Results state: show bar chart after voting */
+              <div className="space-y-3">
+                {activePoll.options.map((opt, i) => {
+                  const count = activePoll.counts[i] ?? 0;
+                  const pct = activePoll.total > 0 ? Math.round((count / activePoll.total) * 100) : 0;
+                  const barW = activePoll.total > 0 ? Math.round((count / maxCount) * 100) : 0;
+                  const isMyVote = activePoll.userVote === i;
+                  return (
+                    <div key={i} className={`rounded-xl px-4 py-3 border ${isMyVote ? "bg-primary/15 border-primary/40" : "bg-white/5 border-white/5"}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-sm font-medium ${isMyVote ? "text-primary" : "text-white/80"}`}>
+                          {opt} {isMyVote && <span className="text-xs ml-1">(your vote)</span>}
+                        </span>
+                        <span className="text-xs text-muted-foreground font-mono">{count} ({pct}%)</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ${isMyVote ? "bg-primary" : "bg-white/30"}`}
+                          style={{ width: `${barW}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+                <p className="text-xs text-muted-foreground text-center pt-1">{activePoll.total} vote{activePoll.total !== 1 ? "s" : ""} total · Results update live</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Ask a question ───────────────────────────────────────────────── */}
         <div className="glass p-6 rounded-3xl relative overflow-hidden">
           {isPaused && (
             <div className="absolute inset-0 z-10 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center text-center">
@@ -177,6 +261,7 @@ export default function StudentSession() {
           </form>
         </div>
 
+        {/* ── Questions stream ─────────────────────────────────────────────── */}
         <div className="flex-1 mt-4">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 px-2">Questions Stream</h2>
           <div className="space-y-3 pb-20">

@@ -8,6 +8,8 @@ import {
   getGetParticipantsQueryKey,
   getGetQuestionsQueryKey,
   getGetEngagementSummaryQueryKey,
+  getGetActivePollQueryKey,
+  getGetPollsQueryKey,
 } from "@/lib/hooks";
 import { getStoredToken } from "@/lib/api";
 
@@ -77,6 +79,19 @@ export function useSocket(sessionId?: number) {
       });
     });
 
+socket.on("poll:new", () => {
+  queryClient.invalidateQueries({ queryKey: getGetActivePollQueryKey(sessionId) });
+  queryClient.invalidateQueries({ queryKey: getGetPollsQueryKey(sessionId) });
+});
+
+socket.on("poll:close", () => {
+  queryClient.invalidateQueries({ queryKey: getGetActivePollQueryKey(sessionId) });
+  queryClient.invalidateQueries({ queryKey: getGetPollsQueryKey(sessionId) });
+});
+
+socket.on("poll:response", () => {
+  queryClient.invalidateQueries({ queryKey: getGetActivePollQueryKey(sessionId) });
+});
     
 
     return () => {
@@ -86,6 +101,9 @@ export function useSocket(sessionId?: number) {
       socket.off("questions:new");
       socket.off("engagement:update");
       socket.off("hand:update");
+      socket.off("poll:new");
+      socket.off("poll:close");
+      socket.off("poll:response");
     };
   }, [sessionId, queryClient]);
 

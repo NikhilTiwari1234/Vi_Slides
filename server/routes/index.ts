@@ -4,6 +4,7 @@ import authRouter from "./auth";
 import sessionsRouter from "./sessions";
 import questionsRouter from "./questions";
 import engagementRouter from "./engagement";
+import pollsRouter from "./polls";
 
 const router = Router();
 
@@ -22,5 +23,8 @@ router.use(questionsRouter);
 
 // Engagement: hand raise, pulse reactions, summary
 router.use(engagementRouter);
+
+// Polls: create, activate, close, respond, results
+router.use(pollsRouter);
 
 export default router;
