@@ -5,7 +5,8 @@ type Question = {
   text: string;
   upvotes: number;
   status: string;
-  answer?: string;
+  answer?: string | null;
+  sentiment?: "positive" | "neutral" | "negative";
 };
 
 type QuestionCardProps = {
@@ -38,9 +39,33 @@ export default function QuestionCard({
     <Card className="mb-4 hover:shadow-lg transition-all duration-200 border border-gray-200">
       <CardHeader>
         <div className="flex justify-between items-start gap-4">
-          <CardTitle className="text-base font-semibold leading-snug">
-            {question.text}
-          </CardTitle>
+          
+          {/* ⭐ UPDATED SECTION */}
+          <div>
+            <CardTitle className="text-base font-semibold leading-snug">
+              {question.text}
+            </CardTitle>
+
+            <div className="flex items-center gap-2 mt-2">
+              {question.sentiment === "positive" && (
+                <span className="text-green-500 text-xs font-medium">
+                  😊 Got it
+                </span>
+              )}
+
+              {question.sentiment === "neutral" && (
+                <span className="text-gray-500 text-xs font-medium">
+                  😐 Neutral
+                </span>
+              )}
+
+              {question.sentiment === "negative" && (
+                <span className="text-red-500 text-xs font-medium">
+                  😟 Confused
+                </span>
+              )}
+            </div>
+          </div>
 
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor}`}

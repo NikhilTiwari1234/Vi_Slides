@@ -1,4 +1,3 @@
-
 export interface User {
   id: number;
   name: string;
@@ -38,6 +37,9 @@ export interface Question {
   duplicateCount: number;
   createdAt: string;
   studentName: string;
+
+  upvotes: number;
+  sentiment?: "positive" | "neutral" | "negative";
 }
 
 export interface EngagementSummary {
@@ -49,9 +51,13 @@ export interface EngagementSummary {
 }
 
 export type AnswerQuestionRequestAnsweredBy = "teacher" | "ai";
-export type EngagementRequestType = "hand_raise" | "hand_lower" | "confused" | "ok" | "got_it";
+export type EngagementRequestType =
+  | "hand_raise"
+  | "hand_lower"
+  | "confused"
+  | "ok"
+  | "got_it";
 export type RegisterRequestRole = "teacher" | "student";
-
 
 const TOKEN_KEY = "vi-slides-token";
 
@@ -70,7 +76,7 @@ export function clearToken(): void {
 class ApiError extends Error {
   constructor(
     public status: number,
-    message: string
+    message: string,
   ) {
     super(message);
     this.name = "ApiError";
@@ -80,7 +86,7 @@ class ApiError extends Error {
 async function request<T>(
   method: string,
   path: string,
-  body?: unknown
+  body?: unknown,
 ): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -113,7 +119,6 @@ async function request<T>(
   return res.json();
 }
 
-
 export interface AuthResponse {
   token: string;
   user: User;
@@ -123,14 +128,14 @@ export async function register(
   name: string,
   email: string,
   password: string,
-  role: RegisterRequestRole
+  role: RegisterRequestRole,
 ): Promise<AuthResponse> {
   return request("POST", "/api/auth/register", { name, email, password, role });
 }
 
 export async function login(
   email: string,
-  password: string
+  password: string,
 ): Promise<AuthResponse> {
   return request("POST", "/api/auth/login", { email, password });
 }
@@ -138,8 +143,6 @@ export async function login(
 export async function getMe(): Promise<User> {
   return request("GET", "/api/auth/me");
 }
-
-
 
 export async function createSession(title: string): Promise<Session> {
   return request("POST", "/api/sessions", { title });
@@ -169,11 +172,11 @@ export async function endSession(sessionId: number): Promise<Session> {
   return request("POST", `/api/sessions/${sessionId}/end`);
 }
 
-export async function getParticipants(sessionId: number): Promise<Participant[]> {
+export async function getParticipants(
+  sessionId: number,
+): Promise<Participant[]> {
   return request("GET", `/api/sessions/${sessionId}/participants`);
 }
-
-
 
 export async function getQuestions(sessionId: number): Promise<Question[]> {
   return request("GET", `/api/sessions/${sessionId}/questions`);
@@ -181,7 +184,7 @@ export async function getQuestions(sessionId: number): Promise<Question[]> {
 
 export async function submitQuestion(
   sessionId: number,
-  text: string
+  text: string,
 ): Promise<Question> {
   return request("POST", `/api/sessions/${sessionId}/questions`, { text });
 }
@@ -190,12 +193,12 @@ export async function answerQuestion(
   sessionId: number,
   questionId: number,
   answer: string,
-  answeredBy: AnswerQuestionRequestAnsweredBy
+  answeredBy: AnswerQuestionRequestAnsweredBy,
 ): Promise<Question> {
   return request(
     "POST",
     `/api/sessions/${sessionId}/questions/${questionId}/answer`,
-    { answer, answeredBy }
+    { answer, answeredBy },
   );
 }
 
@@ -223,51 +226,63 @@ export async function getPolls(sessionId: number): Promise<Poll[]> {
   return request("GET", `/api/sessions/${sessionId}/polls`);
 }
 
-export async function getActivePoll(sessionId: number): Promise<PollResults | null> {
+export async function getActivePoll(
+  sessionId: number,
+): Promise<PollResults | null> {
   return request("GET", `/api/sessions/${sessionId}/polls/active`);
 }
 
 export async function createPoll(
   sessionId: number,
   question: string,
-  options: string[]
+  options: string[],
 ): Promise<Poll> {
-  return request("POST", `/api/sessions/${sessionId}/polls`, { question, options });
+  return request("POST", `/api/sessions/${sessionId}/polls`, {
+    question,
+    options,
+  });
 }
 
-export async function activatePoll(sessionId: number, pollId: number): Promise<Poll> {
+export async function activatePoll(
+  sessionId: number,
+  pollId: number,
+): Promise<Poll> {
   return request("POST", `/api/sessions/${sessionId}/polls/${pollId}/activate`);
 }
 
-export async function closePoll(sessionId: number, pollId: number): Promise<Poll> {
+export async function closePoll(
+  sessionId: number,
+  pollId: number,
+): Promise<Poll> {
   return request("POST", `/api/sessions/${sessionId}/polls/${pollId}/close`);
 }
 
 export async function respondToPoll(
   sessionId: number,
   pollId: number,
-  selectedOption: number
+  selectedOption: number,
 ): Promise<PollResults> {
-  return request("POST", `/api/sessions/${sessionId}/polls/${pollId}/respond`, { selectedOption });
+  return request("POST", `/api/sessions/${sessionId}/polls/${pollId}/respond`, {
+    selectedOption,
+  });
 }
 
 export async function getPollResults(
   sessionId: number,
-  pollId: number
+  pollId: number,
 ): Promise<PollResults> {
   return request("GET", `/api/sessions/${sessionId}/polls/${pollId}/results`);
 }
 
-
 export async function sendEngagement(
   sessionId: number,
-  type: EngagementRequestType
+  type: EngagementRequestType,
 ): Promise<EngagementSummary> {
   return request("POST", `/api/sessions/${sessionId}/engagement`, { type });
 }
 
 export async function getEngagementSummary(
-  sessionId: number
+  sessionId: number,
 ): Promise<EngagementSummary> {
   return request("GET", `/api/sessions/${sessionId}/engagement/summary`);
 }

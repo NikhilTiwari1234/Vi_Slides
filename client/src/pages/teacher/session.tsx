@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuthGuard } from "@/lib/auth";
 import { useSocket } from "@/hooks/use-socket";
+import QuestionCard from "@/components/ui/QuestionCard";
 import {
   useGetSession,
   useGetParticipants,
@@ -352,28 +353,25 @@ export default function TeacherSession() {
               </div>
             )}
           </div>
-
           {questions && questions.filter((q) => q.status !== "merged").length > 0 && (
             <div className="glass p-5 rounded-3xl">
               <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
                 <MessageSquare size={16} className="text-muted-foreground" /> All Questions
-                <span className="text-xs text-muted-foreground font-normal ml-1">({questions.filter((q) => q.status !== "merged").length})</span>
+                <span className="text-xs text-muted-foreground font-normal ml-1">({questions.filter((q) => q.status !== "merged").length})
+                </span>
               </h2>
-              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                {questions.filter((q) => q.status !== "merged").map((q) => (
-                  <div key={q.id} className="flex items-start gap-3 py-2 border-b border-white/5 last:border-0">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white/80 leading-snug truncate">{q.text}</p>
-                      {q.answer && <p className="text-xs text-primary/70 mt-1 truncate">↳ {q.answer}</p>}
-                    </div>
-                    <div className="shrink-0">
-                      {q.status === "answered" ? (
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[10px]">Answered</Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-amber-500/30 text-amber-400 text-[10px]">Pending</Badge>
-                      )}
-                    </div>
-                  </div>
+
+              <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                {questions.filter((q) => q.status !== "merged").map((q) => (<QuestionCard
+                  key={q.id}
+                  question={q}
+                  sessionId={sessionId}
+                  refresh={() => {
+                    queryClient.invalidateQueries({
+                      queryKey: getGetQuestionsQueryKey(sessionId),
+                    });
+                  }}
+                />
                 ))}
               </div>
             </div>
