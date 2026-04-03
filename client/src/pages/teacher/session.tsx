@@ -38,6 +38,9 @@ import {
   Users, Hand, MessageSquare, BrainCircuit, CheckCircle2,
   Loader2, Copy, Check, BarChart2, Plus, Trash2, Zap,
 } from "lucide-react";
+import QuestionStatusBadge from "@/components/ui/QuestionStatusBadge";
+import EngagementDashboard from "@/components/ui/EngagementDashboard";
+
 
 export default function TeacherSession() {
   const { sessionId: sessionIdStr } = useParams<{ sessionId: string }>();
@@ -367,11 +370,10 @@ export default function TeacherSession() {
                       {q.answer && <p className="text-xs text-primary/70 mt-1 truncate">↳ {q.answer}</p>}
                     </div>
                     <div className="shrink-0">
-                      {q.status === "answered" ? (
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[10px]">Answered</Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-amber-500/30 text-amber-400 text-[10px]">Pending</Badge>
-                      )}
+                      <QuestionStatusBadge
+                        answer={q.answer}
+                        answeredBy={q.answeredBy}
+                      />
                     </div>
                   </div>
                 ))}
@@ -379,8 +381,7 @@ export default function TeacherSession() {
             </div>
           )}
         </div>
-
-        {/* ─── Right column: Poll + Engagement + Participants ─────────────────── */}
+            {/* ─── Right column: Poll + Engagement + Participants ─────────────────── */}
         <div className="lg:col-span-4 flex flex-col gap-6">
 
           {/* ── Live Poll Panel ─────────────────────────────────────────────── */}
@@ -390,17 +391,12 @@ export default function TeacherSession() {
                 <BarChart2 size={18} className="text-primary" /> Live Poll
               </h2>
               {!activePoll && !showPollForm && (
-                <Button
-                  size="sm"
-                  onClick={() => setShowPollForm(true)}
-                  className="h-8 bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 text-xs"
-                >
+                <Button size="sm" onClick={() => setShowPollForm(true)} className="h-8 bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 text-xs">
                   <Plus size={14} className="mr-1" /> New Poll
                 </Button>
               )}
             </div>
 
-            {/* ── Active poll: live results ──────────────────────────────────── */}
             {activePoll ? (
               <div className="space-y-3">
                 <p className="text-sm font-medium text-white leading-snug mb-4">{activePoll.question}</p>
@@ -415,10 +411,7 @@ export default function TeacherSession() {
                         <span className="text-muted-foreground font-mono">{count} ({pct}%)</span>
                       </div>
                       <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-primary transition-all duration-500"
-                          style={{ width: `${barW}%` }}
-                        />
+                        <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${barW}%` }} />
                       </div>
                     </div>
                   );
@@ -430,35 +423,19 @@ export default function TeacherSession() {
                     <span className="text-xs text-green-400 font-medium">Live</span>
                   </div>
                 </div>
-                <Button
-                  className="w-full mt-2 h-10 bg-destructive/20 text-red-400 hover:bg-destructive/30 border border-destructive/30 text-sm"
-                  onClick={handleClosePoll}
-                  disabled={closePollMutation.isPending}
-                >
+                <Button className="w-full mt-2 h-10 bg-destructive/20 text-red-400 hover:bg-destructive/30 border border-destructive/30 text-sm" onClick={handleClosePoll} disabled={closePollMutation.isPending}>
                   {closePollMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Square size={14} className="mr-2" />}
                   Close Poll
                 </Button>
               </div>
             ) : showPollForm ? (
-              /* ── Poll creation form ─────────────────────────────────────────── */
               <div className="space-y-3">
-                <Input
-                  value={pollQuestion}
-                  onChange={(e) => setPollQuestion(e.target.value)}
-                  placeholder="Ask the class a question..."
-                  className="bg-black/40 border-white/10 focus-visible:ring-primary/50 text-white placeholder:text-muted-foreground h-11"
-                  autoFocus
-                />
+                <Input value={pollQuestion} onChange={(e) => setPollQuestion(e.target.value)} placeholder="Ask the class a question..." className="bg-black/40 border-white/10 focus-visible:ring-primary/50 text-white placeholder:text-muted-foreground h-11" autoFocus />
                 <div className="space-y-2">
                   {pollOptions.map((opt, i) => (
                     <div key={i} className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground w-5 text-right">{i + 1}.</span>
-                      <Input
-                        value={opt}
-                        onChange={(e) => updateOption(i, e.target.value)}
-                        placeholder={`Option ${i + 1}`}
-                        className="flex-1 bg-black/40 border-white/10 focus-visible:ring-primary/50 text-white placeholder:text-muted-foreground h-9 text-sm"
-                      />
+                      <Input value={opt} onChange={(e) => updateOption(i, e.target.value)} placeholder={`Option ${i + 1}`} className="flex-1 bg-black/40 border-white/10 focus-visible:ring-primary/50 text-white placeholder:text-muted-foreground h-9 text-sm" />
                       {pollOptions.length > 2 && (
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-red-400 shrink-0" onClick={() => removeOption(i)}>
                           <Trash2 size={14} />
@@ -476,21 +453,13 @@ export default function TeacherSession() {
                   <Button variant="outline" size="sm" className="flex-1 border-white/10 hover:bg-white/5 text-muted-foreground text-xs h-9" onClick={() => { setShowPollForm(false); setPollQuestion(""); setPollOptions(["", ""]); }}>
                     Cancel
                   </Button>
-                  <Button
-                    size="sm"
-                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9"
-                    onClick={launchPoll}
-                    disabled={createPollMutation.isPending || activatePollMutation.isPending}
-                  >
-                    {createPollMutation.isPending || activatePollMutation.isPending
-                      ? <Loader2 className="w-3 h-3 animate-spin mr-2" />
-                      : <Zap size={12} className="mr-1.5" />}
+                  <Button size="sm" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9" onClick={launchPoll} disabled={createPollMutation.isPending || activatePollMutation.isPending}>
+                    {createPollMutation.isPending || activatePollMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Zap size={12} className="mr-1.5" />}
                     Launch Poll
                   </Button>
                 </div>
               </div>
             ) : (
-              /* ── No active poll — show past polls or empty state ─────────── */
               <div>
                 {closedPolls.length === 0 ? (
                   <div className="text-center py-6 text-muted-foreground text-sm opacity-70">
@@ -512,7 +481,15 @@ export default function TeacherSession() {
             )}
           </div>
 
-          {/* ── Engagement / Pulse Check ─────────────────────────────────────── */}
+          {/* ── Engagement Dashboard (team member's feature) ─────────────────── */}
+          <div className="glass p-6 rounded-3xl">
+            <EngagementDashboard
+              questions={questions || []}
+              engagement={engagement || { confused: 0, ok: 0, gotIt: 0, raisedHands: 0, raisedHandNames: [] }}
+            />
+          </div>
+
+          {/* ── Pulse Check ──────────────────────────────────────────────────── */}
           <div className="glass p-6 rounded-3xl">
             <h2 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
               <ActivityIcon /> Pulse Check
@@ -581,6 +558,7 @@ export default function TeacherSession() {
               )}
             </div>
           </div>
+
         </div>
       </div>
     </div>
