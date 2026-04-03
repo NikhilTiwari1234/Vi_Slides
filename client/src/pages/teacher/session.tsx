@@ -31,6 +31,8 @@ import {
   Loader2, Copy, Check,
 } from "lucide-react";
 import QuestionStatusBadge from "@/components/ui/QuestionStatusBadge";
+import EngagementDashboard from "@/components/ui/EngagementDashboard";
+
 
 export default function TeacherSession() {
   const { sessionId: sessionIdStr } = useParams<{ sessionId: string }>();
@@ -298,76 +300,125 @@ export default function TeacherSession() {
             </div>
           )}
         </div>
+      <div className="lg:col-span-4 flex flex-col gap-6">
 
-        <div className="lg:col-span-4 flex flex-col gap-6">
-          <div className="glass p-6 rounded-3xl">
-            <h2 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-              <ActivityIcon /> Pulse Check
-            </h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-black/30 border border-white/5 p-4 rounded-2xl text-center">
-                <div className="text-4xl font-bold text-amber-400 mb-1">{engagement?.confused || 0}</div>
-                <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Confused</div>
-              </div>
-              <div className="bg-black/30 border border-white/5 p-4 rounded-2xl text-center">
-                <div className="text-4xl font-bold text-blue-400 mb-1">{engagement?.ok || 0}</div>
-                <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Following</div>
-              </div>
-              <div className="bg-black/30 border border-white/5 p-4 rounded-2xl text-center col-span-2">
-                <div className="text-4xl font-bold text-green-400 mb-1">{engagement?.gotIt || 0}</div>
-                <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Got it perfectly</div>
-              </div>
-            </div>
-            <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary relative">
-                  <Hand size={24} />
-                  {engagement && engagement.raisedHands > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center animate-pulse">
-                      {engagement.raisedHands}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-white">Raised Hands</div>
-                  <div className="text-xs text-muted-foreground truncate max-w-[150px]">
-                    {engagement && engagement.raisedHands > 0 ? engagement.raisedHandNames.join(", ") : "None"}
-                  </div>
-                </div>
-              </div>
-            </div>
+  {/* Engagement Dashboard */}
+  <div className="glass p-6 rounded-3xl">
+    <EngagementDashboard
+       questions={questions || []}
+      engagement={engagement || {
+      confused: 0,
+      ok: 0,
+      gotIt: 0,
+      raisedHands: 0,
+      raisedHandNames: []
+  }}
+    />
+  </div>
+
+  {/* Pulse Check */}
+  <div className="glass p-6 rounded-3xl">
+    <h2 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+      <ActivityIcon /> Pulse Check
+    </h2>
+
+    <div className="grid grid-cols-2 gap-4">
+      <div className="bg-black/30 border border-white/5 p-4 rounded-2xl text-center">
+        <div className="text-4xl font-bold text-amber-400 mb-1">
+          {engagement?.confused || 0}
+        </div>
+        <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+          Confused
+        </div>
+      </div>
+
+      <div className="bg-black/30 border border-white/5 p-4 rounded-2xl text-center">
+        <div className="text-4xl font-bold text-blue-400 mb-1">
+          {engagement?.ok || 0}
+        </div>
+        <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+          Following
+        </div>
+      </div>
+
+      <div className="bg-black/30 border border-white/5 p-4 rounded-2xl text-center col-span-2">
+        <div className="text-4xl font-bold text-green-400 mb-1">
+          {engagement?.gotIt || 0}
+        </div>
+        <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+          Got it perfectly
+        </div>
+      </div>
+    </div>
+
+    <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary relative">
+          <Hand size={24} />
+          {engagement && engagement.raisedHands > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center animate-pulse">
+              {engagement.raisedHands}
+            </span>
+          )}
+        </div>
+
+        <div>
+          <div className="text-sm font-medium text-white">
+            Raised Hands
           </div>
-
-          <div className="glass p-6 rounded-3xl flex-1 flex flex-col min-h-[300px]">
-            <h2 className="text-lg font-semibold text-white mb-4 flex items-center justify-between">
-              <span className="flex items-center gap-2"><Users size={18} /> Participants</span>
-              <Badge variant="secondary" className="bg-white/10 text-white">{participants?.length || 0}</Badge>
-            </h2>
-            <div className="flex-1 overflow-y-auto pr-2 space-y-2 max-h-[400px]">
-              {participants && participants.length > 0 ? (
-                participants.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-black/20 border border-white/5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-medium">
-                        {p.name.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="text-sm font-medium text-white">{p.name}</span>
-                    </div>
-                    {p.handRaised && (
-                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-black animate-bounce shadow-[0_0_15px_rgba(0,180,255,0.6)]">
-                        <Hand size={14} />
-                      </div>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div className="text-center text-sm text-muted-foreground py-8">
-                  Waiting for students to join...
-                </div>
-              )}
-            </div>
+          <div className="text-xs text-muted-foreground truncate max-w-[150px]">
+            {engagement && engagement.raisedHands > 0
+              ? engagement.raisedHandNames.join(", ") || "Students"
+              : "None"}
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  {/* Participants */}
+  <div className="glass p-6 rounded-3xl flex-1 flex flex-col min-h-[300px]">
+    <h2 className="text-lg font-semibold text-white mb-4 flex items-center justify-between">
+      <span className="flex items-center gap-2">
+        <Users size={18} /> Participants
+      </span>
+      <Badge variant="secondary" className="bg-white/10 text-white">
+        {participants?.length || 0}
+      </Badge>
+    </h2>
+
+    <div className="flex-1 overflow-y-auto pr-2 space-y-2 max-h-[400px]">
+      {participants && participants.length > 0 ? (
+        participants.map((p) => (
+          <div
+            key={p.id}
+            className="flex items-center justify-between p-3 rounded-xl bg-black/20 border border-white/5"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-medium">
+                {p.name.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-sm font-medium text-white">
+                {p.name}
+              </span>
+            </div>
+
+            {p.handRaised && (
+              <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-black animate-bounce shadow-[0_0_15px_rgba(0,180,255,0.6)]">
+                <Hand size={14} />
+              </div>
+            )}
+          </div>
+        ))
+      ) : (
+        <div className="text-center text-sm text-muted-foreground py-8">
+          Waiting for students to join...
+        </div>
+      )}
+    </div>
+  </div>
+
+</div>
       </div>
     </div>
   );
