@@ -5,7 +5,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { db } from "../config/db";
 import { questionsTable, sessionsTable, usersTable } from "../models/index";
 import { requireAuth } from "../middleware/auth";
-import { classifyQuestion, generateAnswer, findSimilarQuestion } from "../services/ai";
+import { processQuestion, generateAnswer } from "../services/ai";
 import { getSocketServer } from "../socket/index";
 
 const router = Router();
@@ -87,28 +87,26 @@ router.post("/sessions/:sessionId/questions", requireAuth, async (req, res): Pro
     .where(and(eq(questionsTable.sessionId, sessionId), isNull(questionsTable.mergedIntoId)));
 
     
-  const [questionType, similarId] = await Promise.all([
-    classifyQuestion(text.trim()),
-    findSimilarQuestion(text.trim(), existingQuestions),
-  ]);
+  const { type: questionType, similarId } = await processQuestion(text.trim(), existingQuestions);
 
   
-  if (similarId) {
-    const [original] = await db.select().from(questionsTable).where(eq(questionsTable.id, similarId));
+  // ── Duplicate: merge into the original question ───────────────────────────
+if (similarId) {
+  const [original] = await db.select().from(questionsTable).where(eq(questionsTable.id, similarId));
 
-    
+  // Safety check: if the AI returned an ID that doesn't exist, treat as new question
+  if (original) {
     await db
       .update(questionsTable)
-      .set({ duplicateCount: (original?.duplicateCount ?? 0) + 1 })
+      .set({ duplicateCount: (original.duplicateCount ?? 0) + 1 })
       .where(eq(questionsTable.id, similarId));
 
-      
     const [newQuestion] = await db
       .insert(questionsTable)
       .values({ sessionId, studentId: req.user!.userId, text: text.trim(), type: questionType, status: "merged", mergedIntoId: similarId, duplicateCount: 0 })
       .returning();
 
-    const updatedOriginal = await getQuestionWithStudentName(original!.id);
+    const updatedOriginal = await getQuestionWithStudentName(original.id);
     const io = getSocketServer();
     if (io) {
       io.to(`session:${sessionId}`).emit("questions:new", { merged: true, originalId: similarId, updatedQuestion: updatedOriginal });
@@ -118,6 +116,8 @@ router.post("/sessions/:sessionId/questions", requireAuth, async (req, res): Pro
     res.status(201).json(questionWithName);
     return;
   }
+  // If original not found, fall through and create as new question
+}
 
   
   let answer: string | null = null;
