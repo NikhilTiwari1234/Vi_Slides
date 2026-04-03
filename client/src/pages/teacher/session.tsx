@@ -30,6 +30,7 @@ import {
   Users, Hand, MessageSquare, BrainCircuit, CheckCircle2,
   Loader2, Copy, Check,
 } from "lucide-react";
+import QuestionStatusBadge from "@/components/ui/QuestionStatusBadge";
 
 export default function TeacherSession() {
   const { sessionId: sessionIdStr } = useParams<{ sessionId: string }>();
@@ -286,11 +287,10 @@ export default function TeacherSession() {
                       {q.answer && <p className="text-xs text-primary/70 mt-1 truncate">↳ {q.answer}</p>}
                     </div>
                     <div className="shrink-0">
-                      {q.status === "answered" ? (
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[10px]">Answered</Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-amber-500/30 text-amber-400 text-[10px]">Pending</Badge>
-                      )}
+                      <QuestionStatusBadge
+                        answer={q.answer}
+                        answeredBy={q.answeredBy}
+                      />
                     </div>
                   </div>
                 ))}

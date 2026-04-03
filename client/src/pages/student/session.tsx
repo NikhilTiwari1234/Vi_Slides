@@ -15,6 +15,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import QuestionCard from "@/components/ui/QuestionCard";
+const currentUserId =
+  JSON.parse(localStorage.getItem("user") || "{}")?.id;
 import { Hand, MessageSquare, Loader2, ThumbsUp, HelpCircle, CheckCircle, Clock } from "lucide-react";
 
 export default function StudentSession() {
@@ -179,26 +182,17 @@ export default function StudentSession() {
           <div className="space-y-3 pb-20">
             {displayQuestions.length > 0 ? (
               displayQuestions.map((q) => (
-                <div key={q.id} className="bg-black/20 border border-white/5 p-4 rounded-2xl text-left">
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <p className="text-white/90 font-medium text-sm leading-relaxed">{q.text}</p>
-                    {q.status === "answered" ? (
-                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30 whitespace-nowrap">Answered</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-muted-foreground border-white/10 whitespace-nowrap">Pending</Badge>
-                    )}
-                  </div>
-                  {q.answer && (
-                    <div className="mt-3 bg-primary/10 border border-primary/20 rounded-xl p-3">
-                      <div className="text-[10px] text-primary font-bold uppercase tracking-wider mb-1">Answer ({q.answeredBy})</div>
-                      <p className="text-sm text-primary-foreground/90">{q.answer}</p>
-                    </div>
-                  )}
-                </div>
-              ))
+              <QuestionCard
+                  key={q.id}
+                  question={q}
+                  currentUserId={currentUserId}
+              />
+            ))
             ) : (
-              <div className="text-center text-muted-foreground py-10">No questions asked yet.</div>
-            )}
+            <div className="text-center text-muted-foreground py-10">
+                  No questions asked yet.
+            </div>
+          )}
           </div>
         </div>
       </main>

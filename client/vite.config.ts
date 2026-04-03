@@ -23,11 +23,11 @@ export default defineConfig({
     // Proxy API and WebSocket requests to the Express backend
     proxy: {
       "/api": {
-        target: "http://localhost:5000",
+        target: "http://localhost:5001",
         changeOrigin: true,
       },
       "/socket.io": {
-        target: "http://localhost:5000",
+        target: "http://localhost:5001",
         ws: true,         // forward WebSocket upgrades
         changeOrigin: true,
       },
