@@ -1,29 +1,13 @@
-/**
- * services/ai.ts — AI Question Processing Service
- *
- * Uses Google Gemini (via Google AI Studio API key in .env) to:
- *  1. In ONE call: classify a question AND check if it's a duplicate
- *  2. Generate a short answer for simple questions (separate call)
- *
- * Caches the first working model so subsequent calls skip failed models.
- * If AI fails, returns safe defaults so the app keeps working.
- */
-
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
-// Models tried in order — confirmed working models first
 const CANDIDATE_MODELS = [
   "gemini-flash-lite-latest",
   "gemini-2.5-flash-lite",
   "gemini-2.0-flash-lite",
 ];
 
-// Cached working model — skip retrying failed ones after first success
 let _workingModel: string | null = null;
 
-/**
- * Internal helper — sends a prompt to Gemini using the cached or best available model.
- */
 async function ask(prompt: string): Promise<string> {
   if (!GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY is not set in .env");
@@ -34,7 +18,6 @@ async function ask(prompt: string): Promise<string> {
     generationConfig: { temperature: 0.1, maxOutputTokens: 512 },
   });
 
-  // If we already know a working model, try it first
   const modelsToTry = _workingModel
     ? [_workingModel, ...CANDIDATE_MODELS.filter((m) => m !== _workingModel)]
     : CANDIDATE_MODELS;
@@ -58,7 +41,6 @@ async function ask(prompt: string): Promise<string> {
 
       if (res.status === 429) {
         lastError = `${model}: quota exceeded (429)`;
-        // If this was our cached working model, clear it so we try others
         if (_workingModel === model) _workingModel = null;
         continue;
       }
@@ -91,14 +73,6 @@ async function ask(prompt: string): Promise<string> {
 
   throw new Error(`All Gemini models failed. Last: ${lastError}`);
 }
-
-/**
- * processQuestion — ONE API call that does both:
- *   1. Classifies the question as 'simple' or 'complex'
- *   2. Checks if it's a duplicate of any existing question
- *
- * Returns { type, similarId } — replaces the separate classifyQuestion + findSimilarQuestion calls.
- */
 export async function processQuestion(
   questionText: string,
   existingQuestions: Array<{ id: number; text: string }>
@@ -127,7 +101,6 @@ Replace the values appropriately. type must be "simple" or "complex". duplicateI
 
     const raw = await ask(prompt);
 
-    // Extract JSON from response (handle any extra text)
     const match = raw.match(/\{[^}]+\}/);
     if (!match) throw new Error(`Could not parse JSON from: ${raw}`);
 
@@ -146,10 +119,6 @@ Replace the values appropriately. type must be "simple" or "complex". duplicateI
   }
 }
 
-/**
- * generateAnswer — Auto-answers a simple factual question.
- * Returns a 2-4 sentence educational answer, or null if AI fails.
- */
 export async function generateAnswer(questionText: string): Promise<string | null> {
   try {
     const result = await ask(
@@ -162,7 +131,6 @@ export async function generateAnswer(questionText: string): Promise<string | nul
   }
 }
 
-// Keep old exports as wrappers so nothing else breaks
 export async function classifyQuestion(questionText: string): Promise<"simple" | "complex"> {
   const { type } = await processQuestion(questionText, []);
   return type;
@@ -172,6 +140,5 @@ export async function findSimilarQuestion(
   newQuestion: string,
   existingQuestions: Array<{ id: number; text: string }>
 ): Promise<number | null> {
-  // Not used directly anymore — processQuestion handles both
   return null;
 }
