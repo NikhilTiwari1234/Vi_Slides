@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuthGuard } from "@/lib/auth";
 import { useSocket } from "@/hooks/use-socket";
+import ChatBox from "@/components/ui/ChatBox";
 import {
   useGetSession,
   useGetQuestions,
@@ -48,6 +49,30 @@ export default function StudentSession() {
   const submitQuestionMutation = useSubmitQuestion();
   const sendEngagementMutation = useSendEngagement();
   const respondToPollMutation = useRespondToPoll();
+
+  
+const handleUpvote = async (questionId: number | string) => {
+  try {
+    await fetch(`/api/sessions/${sessionId}/questions/${questionId}/upvote`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("vi-slides-token")}`
+      },
+    });
+
+   
+    queryClient.invalidateQueries({
+      queryKey: getGetQuestionsQueryKey(sessionId),
+    });
+  } catch (err) {
+    toast({
+      variant: "destructive",
+      title: "Upvote failed",
+      description: "Please try again",
+    });
+  }
+};
 
   const [questionText, setQuestionText] = useState("");
   const [isHandRaised, setIsHandRaised] = useState(false);
@@ -119,7 +144,8 @@ export default function StudentSession() {
     });
   };
 
-  const displayQuestions = questions || [];
+  const displayQuestions =
+  (questions || []).sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
   const hasVoted = activePoll?.userVote !== null && activePoll?.userVote !== undefined;
   const maxCount = activePoll ? Math.max(...activePoll.counts, 1) : 1;
 
@@ -271,6 +297,7 @@ export default function StudentSession() {
                   key={q.id}
                   question={q}
                   currentUserId={currentUserId}
+                  onUpvote={handleUpvote}
               />
             ))
             ) : (
@@ -280,6 +307,9 @@ export default function StudentSession() {
           )}
           </div>
         </div>
+      <div className="mt-4">
+        <ChatBox sessionId={sessionId} />
+      </div>
       </main>
     </div>
   );

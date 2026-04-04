@@ -51,6 +51,21 @@ export function initSocketServer(httpServer: HttpServer): SocketServer {
       socket.leave(`session:${sessionId}`);
     });
 
+    // ─── CHAT: SEND MESSAGE ─────────────────────────────────────────────
+    socket.on("chat:send", ({ sessionId, message }) => {
+      const room = `session:${sessionId}`;
+
+      if (!message || typeof message !== "string") return;
+
+      const chatPayload = {
+      message,
+      userId: socket.data.userId || null,
+      createdAt: new Date(),
+      };
+
+      io?.to(room).emit("chat:new", chatPayload);
+    });
+
     socket.on("disconnect", (reason) => {
       console.log(`[Socket] Disconnected: ${socket.id} (${reason})`);
     });

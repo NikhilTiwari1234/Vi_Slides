@@ -9,16 +9,20 @@ interface Question {
   answeredBy?: "ai" | "teacher" | null;
   createdAt?: string;
   studentName?: string;
+  upvotes?: number;
 }
 
 interface QuestionCardProps {
   question: Question;
   currentUserId: string | number;
+
+  onUpvote: (id: number | string) => void;
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({
   question,
   currentUserId,
+  onUpvote,
 }) => {
   const isOwn = String(question.userId) === String(currentUserId);
 
@@ -58,7 +62,13 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           <QuestionStatusBadge
             answer={question.answer}
             answeredBy={question.answeredBy}
-          />
+          /> 
+          <button
+            onClick={() => onUpvote(question.id)}
+            className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded"
+          >
+            👍 {question.upvotes || 0}
+          </button>
         </div>
       </div>
     </div>
