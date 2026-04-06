@@ -44,7 +44,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
               </span>
             )}
             {question.studentName && !isOwn && (
-              <span className="text-xs text-gray-500">{question.studentName}</span>
+              <span className="text-xs text-gray-500">
+                {question.studentName}
+              </span>
             )}
           </div>
           <p className="text-sm text-gray-800 font-medium leading-snug">
@@ -62,12 +64,13 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           <QuestionStatusBadge
             answer={question.answer}
             answeredBy={question.answeredBy}
-          /> 
+          />
           <button
             onClick={() => onUpvote(question.id)}
-            className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded"
-          >
-            👍 {question.upvotes || 0}
+            className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded font-semibold flex items-center gap-1"
+          > 
+          ➕ <span className="font-bold">{question.upvotes ?? 0}</span>
+            
           </button>
         </div>
       </div>

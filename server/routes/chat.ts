@@ -3,6 +3,9 @@ import { db } from "../config/db";
 import { chatMessagesTable } from "../models/chatMessages";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
+import { usersTable } from "../models/users";
+
+
 
 const router = Router();
 
@@ -11,9 +14,16 @@ router.get("/sessions/:sessionId/chat", requireAuth, async (req, res) => {
   const sessionId = Number(req.params.sessionId);
 
   const messages = await db
-    .select()
-    .from(chatMessagesTable)
-    .where(eq(chatMessagesTable.sessionId, sessionId));
+  .select({
+    id: chatMessagesTable.id,
+    message: chatMessagesTable.message,
+    userId: chatMessagesTable.userId,
+    createdAt: chatMessagesTable.createdAt,
+    senderName: usersTable.name,
+  })
+  .from(chatMessagesTable)
+  .leftJoin(usersTable, eq(chatMessagesTable.userId, usersTable.id))
+  .where(eq(chatMessagesTable.sessionId, sessionId))
 
   res.json(messages);
 });

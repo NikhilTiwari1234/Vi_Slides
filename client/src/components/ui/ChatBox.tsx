@@ -6,6 +6,7 @@ interface Message {
   message: string;
   userId: number;
   createdAt: string;
+  senderName?: string;
 }
 
 export default function ChatBox({ sessionId }: { sessionId: number }) {
@@ -61,22 +62,54 @@ export default function ChatBox({ sessionId }: { sessionId: number }) {
     });
 
    
-    socket?.emit("chat:send", { sessionId, message: input });
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+    socket?.emit("chat:send", {
+      sessionId,
+      message: input,
+      userId: currentUser.id,
+      senderName: currentUser.name,
+    });
 
     setInput("");
   };
 
   return (
-    <div className="border p-3 mt-4 rounded">
-      <h3 className="font-bold mb-2">Live Chat</h3>
+  <div className="border p-3 mt-4 rounded">
+    <h3 className="font-bold mb-2">Live Chat</h3>
 
-      <div className="h-40 overflow-y-auto border mb-2 p-2 rounded">
-        {messages.map((m, i) => (
-          <div key={i} className="text-sm mb-1">
-            {m.message}
+    <div className="h-48 overflow-y-auto border mb-2 p-3 rounded bg-black/20">
+      {messages.map((m, i) => {
+        const currentUser = JSON.parse(
+          localStorage.getItem("user") || "{}"
+        );
+        const isMe = m.userId === currentUser?.id;
+
+        return (
+          <div
+            key={i}
+            className={`mb-2 flex ${
+              isMe ? "justify-end" : "justify-start"
+            }`}
+          >
+            <div
+              className={`px-3 py-2 rounded-lg max-w-[75%] ${
+                isMe
+                  ? "bg-green-500 text-white"
+                  : "bg-gray-200 text-black"
+              }`}
+            >
+              {/* Sender Name */}
+              <div className="text-xs font-semibold mb-1 opacity-70">
+                {isMe ? "You" : m.senderName || "User"}
+              </div>
+
+              {/* Message */}
+              <div className="text-sm">{m.message}</div>
+            </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
+    </div>
 
       <input
         value={input}

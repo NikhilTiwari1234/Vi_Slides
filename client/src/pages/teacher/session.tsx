@@ -71,7 +71,7 @@ export default function TeacherSession() {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
 
-  useSocket(sessionId);
+  const { socket } = useSocket(sessionId);
 
   const { data: session, isLoading: sessionLoading } = useGetSession(
     sessionId,
@@ -132,6 +132,26 @@ export default function TeacherSession() {
   ).sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
   const currentQuestion = pendingQuestions[currentQuestionIndex];
   const closedPolls = polls?.filter((p) => p.status === "closed") || [];
+
+
+useEffect(() => {
+  if (!socket) return;
+  socket.emit("join-session", sessionId);
+}, [socket, sessionId]);
+
+useEffect(() => {
+  if (!socket) return;
+
+  socket.on("questions:new", () => {
+    queryClient.invalidateQueries({
+      queryKey: getGetQuestionsQueryKey(sessionId),
+    });
+  });
+
+  return () => {
+    socket.off("questions:new");
+  };
+}, [socket, sessionId]);
 
   useEffect(() => {
     if (
@@ -486,7 +506,7 @@ export default function TeacherSession() {
                       onClick={() => handleUpvote(currentQuestion.id)}
                       className="bg-white/10 hover:bg-white/20 px-3 py-1 rounded text-sm flex items-center gap-1"
                     >
-                      👍 {q.upvotes || 0}
+                      ➕ {currentQuestion.upvotes || 0}
                     </button>
                   </div>
 

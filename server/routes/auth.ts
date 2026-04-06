@@ -10,7 +10,8 @@ const router = Router();
 
 // ─── POST /api/auth/register ─────────────────────────────────────────────────
 router.post("/auth/register", async (req, res): Promise<void> => {
-  const { name, email, password, role } = req.body;
+try{
+    const { name, email, password, role } = req.body;
 
   // Basic input validation
   if (!name || !email || !password || !role) {
@@ -51,10 +52,15 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     token,
     user: { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role },
   });
+} catch (err) {
+    console.error("[REGISTER ERROR]", err); // ← this will print the REAL error
+    res.status(500).json({ error: "server_error", message: (err as Error).message });
+  }
 });
 
 // ─── POST /api/auth/login ─────────────────────────────────────────────────────
 router.post("/auth/login", async (req, res): Promise<void> => {
+try{
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -84,10 +90,15 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     token,
     user: { id: user.id, name: user.name, email: user.email, role: user.role },
   });
+} catch (err) {
+    console.error("[REGISTER ERROR]", err); // ← this will print the REAL error
+    res.status(500).json({ error: "server_error", message: (err as Error).message });
+  }
 });
 
 // ─── GET /api/auth/me ─────────────────────────────────────────────────────────
 router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
+try{
   const [user] = await db
     .select()
     .from(usersTable)
@@ -99,6 +110,13 @@ router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
   }
 
   res.json({ id: user.id, name: user.name, email: user.email, role: user.role });
+
+} catch (err) {
+    console.error("[REGISTER ERROR]", err); // ← this will print the REAL error
+    res.status(500).json({ error: "server_error", message: (err as Error).message });
+  }
+
 });
+
 
 export default router;

@@ -24,6 +24,7 @@ async function getQuestionWithStudentName(questionId: number) {
       answeredBy: questionsTable.answeredBy,
       mergedIntoId: questionsTable.mergedIntoId,
       duplicateCount: questionsTable.duplicateCount,
+      upvotes: questionsTable.upvotes,
       createdAt: questionsTable.createdAt,
       studentName: usersTable.name,
     })
@@ -213,7 +214,10 @@ router.post(
         userId,
       });
 
-      
+      const [question] = await db
+        .select()
+        .from(questionsTable)
+        .where(eq(questionsTable.id, questionId));
       await db
         .update(questionsTable)
         .set({
@@ -224,7 +228,7 @@ router.post(
             eq(questionsTable.id, questionId),
             eq(questionsTable.sessionId, sessionId)
           )
-        );
+        );console.log("UPVOTE HIT:", questionId);
 
       const updatedQuestion = await getQuestionWithStudentName(questionId);
 
@@ -236,7 +240,6 @@ router.post(
         return;
       }
 
-      // ✅ REAL-TIME UPDATE
       const io = getSocketServer();
       if (io) {
         io.to(`session:${sessionId}`).emit("questions:new", {
@@ -254,6 +257,7 @@ router.post(
     }
   }
 );
+
 
 
 export default router;
