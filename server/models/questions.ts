@@ -16,6 +16,7 @@ export const questionsTable = pgTable("questions", {
   answeredBy: text("answered_by", { enum: ["teacher", "ai"] }),  
   mergedIntoId: integer("merged_into_id"),
   duplicateCount: integer("duplicate_count").notNull().default(0),
+  upvotes: integer("upvotes").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

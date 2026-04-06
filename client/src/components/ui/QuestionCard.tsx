@@ -9,16 +9,20 @@ interface Question {
   answeredBy?: "ai" | "teacher" | null;
   createdAt?: string;
   studentName?: string;
+  upvotes?: number;
 }
 
 interface QuestionCardProps {
   question: Question;
   currentUserId: string | number;
+
+  onUpvote: (id: number | string) => void;
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({
   question,
   currentUserId,
+  onUpvote,
 }) => {
   const isOwn = String(question.userId) === String(currentUserId);
 
@@ -40,7 +44,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
               </span>
             )}
             {question.studentName && !isOwn && (
-              <span className="text-xs text-gray-500">{question.studentName}</span>
+              <span className="text-xs text-gray-500">
+                {question.studentName}
+              </span>
             )}
           </div>
           <p className="text-sm text-gray-800 font-medium leading-snug">
@@ -59,6 +65,13 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             answer={question.answer}
             answeredBy={question.answeredBy}
           />
+          <button
+            onClick={() => onUpvote(question.id)}
+            className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded font-semibold flex items-center gap-1"
+          > 
+          ➕ <span className="font-bold">{question.upvotes ?? 0}</span>
+            
+          </button>
         </div>
       </div>
     </div>
