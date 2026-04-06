@@ -1,13 +1,12 @@
 
 
 import { Router } from "express";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { db } from "../config/db";
 import { questionsTable, sessionsTable, usersTable } from "../models/index";
 import { requireAuth } from "../middleware/auth";
 import { processQuestion, generateAnswer } from "../services/ai";
 import { getSocketServer } from "../socket/index";
-import { questionVotesTable } from "../models/questionVotes";
 
 const router = Router();
 
@@ -24,7 +23,6 @@ async function getQuestionWithStudentName(questionId: number) {
       answeredBy: questionsTable.answeredBy,
       mergedIntoId: questionsTable.mergedIntoId,
       duplicateCount: questionsTable.duplicateCount,
-      upvotes: questionsTable.upvotes,
       createdAt: questionsTable.createdAt,
       studentName: usersTable.name,
     })
@@ -178,86 +176,5 @@ router.post("/sessions/:sessionId/questions/:questionId/answer", requireAuth, as
 
   res.json(questionWithName);
 });
-
-// ─── POST /api/sessions/:sessionId/questions/:questionId/upvote ───────────────
-router.post(
-  "/sessions/:sessionId/questions/:questionId/upvote",
-  requireAuth,
-  async (req, res): Promise<void> => {
-    const sessionId = parseInt(req.params.sessionId as string, 10);
-    const questionId = parseInt(req.params.questionId as string, 10);
-    const userId = req.user!.userId;
-
-    try {
-      
-      const existingVote = await db
-        .select()
-        .from(questionVotesTable)
-        .where(
-          and(
-            eq(questionVotesTable.questionId, questionId),
-            eq(questionVotesTable.userId, userId)
-          )
-        );
-
-      if (existingVote.length > 0) {
-        res.status(400).json({
-          error: "already_voted",
-          message: "You have already upvoted this question",
-        });
-        return;
-      }
-
-      
-      await db.insert(questionVotesTable).values({
-        questionId,
-        userId,
-      });
-
-      const [question] = await db
-        .select()
-        .from(questionsTable)
-        .where(eq(questionsTable.id, questionId));
-      await db
-        .update(questionsTable)
-        .set({
-          upvotes: sql`upvotes + 1`,
-        })
-        .where(
-          and(
-            eq(questionsTable.id, questionId),
-            eq(questionsTable.sessionId, sessionId)
-          )
-        );console.log("UPVOTE HIT:", questionId);
-
-      const updatedQuestion = await getQuestionWithStudentName(questionId);
-
-      if (!updatedQuestion) {
-        res.status(404).json({
-          error: "not_found",
-          message: "Question not found",
-        });
-        return;
-      }
-
-      const io = getSocketServer();
-      if (io) {
-        io.to(`session:${sessionId}`).emit("questions:new", {
-          updated: updatedQuestion,
-        });
-      }
-
-      res.json(updatedQuestion);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({
-        error: "server_error",
-        message: "Failed to upvote",
-      });
-    }
-  }
-);
-
-
 
 export default router;
