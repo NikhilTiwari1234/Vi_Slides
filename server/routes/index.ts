@@ -5,7 +5,6 @@ import sessionsRouter from "./sessions";
 import questionsRouter from "./questions";
 import engagementRouter from "./engagement";
 import pollsRouter from "./polls";
-import chatRouter from "./chat";
 
 const router = Router();
 
@@ -13,20 +12,19 @@ router.get("/healthz", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-
+// Authentication: register, login, get profile
 router.use(authRouter);
 
-
+// Sessions: create, join, start/pause/end, list participants
 router.use(sessionsRouter);
 
-
+// Questions: submit, list, answer
 router.use(questionsRouter);
 
-
+// Engagement: hand raise, pulse reactions, summary
 router.use(engagementRouter);
 
-
+// Polls: create, activate, close, respond, results
 router.use(pollsRouter);
-router.use(chatRouter);
 
 export default router;
