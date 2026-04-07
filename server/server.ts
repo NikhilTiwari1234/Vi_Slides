@@ -1,6 +1,4 @@
-
-
-import "dotenv/config"; 
+import "dotenv/config";
 
 import { createServer } from "http";
 import express from "express";
@@ -31,7 +29,9 @@ httpServer.listen(PORT, () => {
 
 httpServer.on("error", (err: NodeJS.ErrnoException) => {
   if (err.code === "EADDRINUSE") {
-    console.error(`❌  Port ${PORT} is already in use. Change PORT in your .env file.`);
+    console.error(
+      `❌  Port ${PORT} is already in use. Change PORT in your .env file.`,
+    );
   } else {
     console.error("Server error:", err);
   }
