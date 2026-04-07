@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuthGuard } from "@/lib/auth";
 import { useSocket } from "@/hooks/use-socket";
+import ChatBox from "@/components/ui/ChatBox";
 import {
   useGetSession,
   useGetParticipants,
@@ -558,7 +559,10 @@ export default function TeacherSession() {
               )}
             </div>
           </div>
-
+          {/* ── Live Chat ───────────────────────────────────────────── */}
+          <div className="glass p-4 rounded-3xl">
+            <ChatBox sessionId={sessionId} />
+          </div>
         </div>
       </div>
     </div>
