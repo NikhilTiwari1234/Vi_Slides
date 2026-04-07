@@ -38,7 +38,6 @@ export interface Question {
   duplicateCount: number;
   createdAt: string;
   studentName: string;
-  upvotes?: number;
 }
 
 export interface EngagementSummary {
