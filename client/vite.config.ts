@@ -1,11 +1,3 @@
-/**
- * vite.config.ts — Vite Dev Server Configuration
- *
- * Runs on port 3000 (hardcoded for simplicity).
- * In development, /api/* and /socket.io/* requests are proxied
- * to the Express backend on port 5000.
- */
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -23,12 +15,12 @@ export default defineConfig({
     // Proxy API and WebSocket requests to the Express backend
     proxy: {
       "/api": {
-        target: "http://localhost:5001",
+        target: "http://localhost:5000",
         changeOrigin: true,
       },
       "/socket.io": {
-        target: "http://localhost:5001",
-        ws: true,         // forward WebSocket upgrades
+        target: "http://localhost:5000",
+        ws: true, // forward WebSocket upgrades
         changeOrigin: true,
       },
     },
