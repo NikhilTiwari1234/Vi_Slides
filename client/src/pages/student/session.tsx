@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuthGuard } from "@/lib/auth";
 import { useSocket } from "@/hooks/use-socket";
+import ChatBox from "@/components/ui/ChatBox";
 import {
   useGetSession,
   useGetQuestions,
@@ -281,6 +282,9 @@ export default function StudentSession() {
           </div>
         </div>
       </main>
+      <div className="mt-4">
+        <ChatBox sessionId={sessionId} />
+      </div>
     </div>
   );
 }
